@@ -1,0 +1,5 @@
+{
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
+  "runArgs": ["--gpus=all"],
+  "extensions": ["ms-python.python", "tamasfe.even-better-toml"],
+}
