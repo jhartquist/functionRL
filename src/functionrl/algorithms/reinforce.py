@@ -15,14 +15,15 @@ class Pi(nn.Module):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
-        self.model = nn.Sequential(
-            nn.Linear(in_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, out_dim)
-        )
+        # self.model = nn.Sequential(
+        #     nn.Linear(in_dim, 64),
+        #     nn.ReLU(),
+        #     nn.Linear(64, out_dim)
+        # )
+        self.model = nn.Linear(in_dim, out_dim)
 
     def act(self, state):
-        state_t = torch.tensor([state])
+        state_t = torch.tensor([state])  # .to("cuda")
         state_oh = F.one_hot(state_t, num_classes=self.in_dim).float()
         logits = self.forward(state_oh)
         pd = Categorical(logits=logits)
@@ -40,7 +41,7 @@ def reinforce(
     learning_rate: float = 1e-3,
     n_episodes: int = 10000,
     log_interval: int = 100,
-    eval_episodes: int = 100,
+    eval_episodes: int = 1000,
 ):
     env_train = make_env()
     env_eval = make_env()
@@ -48,7 +49,7 @@ def reinforce(
     n_states = env_train.observation_space.n
     n_actions = env_train.action_space.n
 
-    pi = Pi(n_states, n_actions)
+    pi = Pi(n_states, n_actions)  # .to("cuda")
     optimizer = optim.Adam(pi.parameters(), lr=learning_rate)
 
     def policy(state):
@@ -66,7 +67,7 @@ def reinforce(
         for t in reversed(range(T)):
             future_ret = rewards[t] + gamma * future_ret
             rets[t] = future_ret
-        rets = torch.tensor(rets)
+        rets = torch.tensor(rets)  # .to("cuda")
         log_probs = torch.stack(log_probs)
         loss = (-log_probs * rets).sum()
         optimizer.zero_grad()
@@ -85,5 +86,6 @@ if __name__ == "__main__":
     reinforce(
         make_frozen_lake,
         gamma=0.99,
-        n_episodes=100000,
+        learning_rate=0.01,
+        n_episodes=10000,
     )
