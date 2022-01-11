@@ -1,4 +1,6 @@
 import numpy as np
+
+from functionrl.experiences import calc_episode_return, gen_episodes
 from .utils import decay_generator
 
 
@@ -34,3 +36,11 @@ def make_epsilon_greedy_policy(q, epsilon_decay_fn, seed=None):
         return action, {"epsilon": epsilon}
 
     return _policy
+
+
+def evaluate_policy(make_env, policy, n_episodes):
+    env = make_env()
+    episodes = gen_episodes(env, policy, n=n_episodes)
+    returns = [calc_episode_return(episode) for episode in episodes]
+    mean_return = np.mean(returns)
+    return mean_return

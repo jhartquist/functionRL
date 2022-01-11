@@ -32,3 +32,7 @@ def gen_episodes(env, policy):
 def gen_experiences(env, policy):
     while True:
         yield from gen_episode(env, policy)
+
+
+def calc_episode_return(episode):
+    return sum(experience.reward for experience in episode)
