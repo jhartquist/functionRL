@@ -1,13 +1,11 @@
 import numpy as np
 import torch
 from torch import nn, optim
-from torch.nn import functional as F
 from torch.distributions import Categorical
-from ..utils import linear_decay
-from ..policies import make_epsilon_greedy_policy, make_greedy_policy
-from ..experiences import gen_episodes
+from torch.nn import functional as F
+
 from ..envs import make_frozen_lake
-from ..display import print_pi, print_v
+from ..experiences import gen_episodes
 
 
 class Pi(nn.Module):
@@ -47,10 +45,20 @@ def reinforce(
     pi = Pi(n_states, n_actions)
     optimizer = optim.Adam(pi.parameters(), lr=learning_rate)
 
+    print(pi)
+
     def policy(state):
         action, log_prob = pi.act(state)
         return action, {"log_prob": log_prob}
 
+    def make_eval_policy():
+        states = torch.arange(n_states)
+        states_oh = F.one_hot(states, num_classes=n_states).float()
+        logits = pi(states_oh)
+        pds = [Categorical(logits=sl) for sl in logits]
+        return lambda state: pds[state].sample().item()
+
+    losses = []
     for i, episode in enumerate(gen_episodes(env_train, policy, n=n_episodes), start=1):
         T = len(episode)
         rewards = [exp.reward for exp in episode]
@@ -60,19 +68,25 @@ def reinforce(
         for t in reversed(range(T)):
             future_ret = rewards[t] + gamma * future_ret
             rets[t] = future_ret
-        rets = torch.tensor(rets)
+        rets = torch.tensor(rets)  # .to("cuda")
+        # rets.sub_(rets.mean())
         log_probs = torch.stack(log_probs)
         loss = (-log_probs * rets).sum()
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
+        losses.append(loss.item())
+
         if i % log_interval == 0:
             with torch.no_grad():
-                episodes = list(gen_episodes(env_eval, policy, n=eval_episodes))
+                episodes = list(
+                    gen_episodes(env_eval, make_eval_policy(), n=eval_episodes)
+                )
             returns = [sum(e.reward for e in episode) for episode in episodes]
             mean_return = np.mean(returns)
-            print(f"{i:5d}: {mean_return:.3f}")
+            mean_loss = np.array(losses[-log_interval:]).mean()
+            print(f"{i:5d}: {mean_return:.3f} - loss: {mean_loss:8.4f}")
 
 
 if __name__ == "__main__":
