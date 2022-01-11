@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from torch.distributions import Categorical
 from ..utils import linear_decay
 from ..policies import make_epsilon_greedy_policy, make_greedy_policy
-from ..experiences import generate_episodes
+from ..experiences import gen_episodes
 from ..envs import make_frozen_lake
 from ..display import print_pi, print_v
 
@@ -15,21 +15,16 @@ class Pi(nn.Module):
         super().__init__()
         self.in_dim = in_dim
         self.out_dim = out_dim
-        # self.model = nn.Sequential(
-        #     nn.Linear(in_dim, 64),
-        #     nn.ReLU(),
-        #     nn.Linear(64, out_dim)
-        # )
-        self.model = nn.Linear(in_dim, out_dim)
+        self.model = nn.Linear(in_dim, out_dim, bias=False)
 
     def act(self, state):
-        state_t = torch.tensor([state])  # .to("cuda")
+        state_t = torch.tensor([state])
         state_oh = F.one_hot(state_t, num_classes=self.in_dim).float()
         logits = self.forward(state_oh)
         pd = Categorical(logits=logits)
         action = pd.sample()
         log_prob = pd.log_prob(action)
-        return action.item(), log_prob  # .squeeze()
+        return action.item(), log_prob
 
     def forward(self, x):
         return self.model(x)
@@ -49,16 +44,14 @@ def reinforce(
     n_states = env_train.observation_space.n
     n_actions = env_train.action_space.n
 
-    pi = Pi(n_states, n_actions)  # .to("cuda")
+    pi = Pi(n_states, n_actions)
     optimizer = optim.Adam(pi.parameters(), lr=learning_rate)
 
     def policy(state):
         action, log_prob = pi.act(state)
         return action, {"log_prob": log_prob}
 
-    for i, episode in enumerate(
-        generate_episodes(env_train, policy, n=n_episodes), start=1
-    ):
+    for i, episode in enumerate(gen_episodes(env_train, policy, n=n_episodes), start=1):
         T = len(episode)
         rewards = [exp.reward for exp in episode]
         log_probs = [exp.policy_info["log_prob"] for exp in episode]
@@ -67,7 +60,7 @@ def reinforce(
         for t in reversed(range(T)):
             future_ret = rewards[t] + gamma * future_ret
             rets[t] = future_ret
-        rets = torch.tensor(rets)  # .to("cuda")
+        rets = torch.tensor(rets)
         log_probs = torch.stack(log_probs)
         loss = (-log_probs * rets).sum()
         optimizer.zero_grad()
@@ -76,7 +69,7 @@ def reinforce(
 
         if i % log_interval == 0:
             with torch.no_grad():
-                episodes = list(generate_episodes(env_eval, policy, n=eval_episodes))
+                episodes = list(gen_episodes(env_eval, policy, n=eval_episodes))
             returns = [sum(e.reward for e in episode) for episode in episodes]
             mean_return = np.mean(returns)
             print(f"{i:5d}: {mean_return:.3f}")

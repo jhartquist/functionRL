@@ -8,7 +8,7 @@ Experience = namedtuple(
 )
 
 
-def generate_episode(env, policy):
+def gen_episode(env, policy):
     next_state = env.reset()
     while True:
         state = next_state
@@ -16,19 +16,19 @@ def generate_episode(env, policy):
         policy_info = None
         if isinstance(action, tuple):
             action, policy_info = action
-        next_state, reward, is_done, env_info = env.step(action)
+        next_state, reward, is_done, _ = env.step(action)
         yield Experience(state, action, reward, next_state, is_done, policy_info)
         if is_done:
             break
 
 
 @limitable
-def generate_episodes(env, policy):
+def gen_episodes(env, policy):
     while True:
-        yield list(generate_episode(env, policy))
+        yield list(gen_episode(env, policy))
 
 
 @limitable
-def generate_experiences(env, policy):
+def gen_experiences(env, policy):
     while True:
-        yield from generate_episode(env, policy)
+        yield from gen_episode(env, policy)
