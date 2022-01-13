@@ -1,4 +1,3 @@
-from itertools import count
 from typing import Optional
 import numpy as np
 from ..utils import linear_decay
