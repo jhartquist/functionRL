@@ -16,7 +16,7 @@ USER $USERNAME
 
 # install poetry for package management
 RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="~/.local/bin:$PATH"
+ENV PATH="/home/$USERNAME/.local/bin:$PATH"
 
 WORKDIR $DIR 
 
