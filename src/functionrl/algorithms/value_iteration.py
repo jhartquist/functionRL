@@ -12,7 +12,7 @@ def value_iteration(env, gamma=0.99, theta=1e-10):
     n_actions = env.action_space.n
     transitions = env.P
     v = [0.0 for _ in range(n_states)]
-    for step in count(1):
+    for step in count(1):  # pragma: no branch
         q = [
             [
                 sum(
@@ -34,7 +34,7 @@ def value_iteration(env, gamma=0.99, theta=1e-10):
     return pi, {"steps": step, "q": q, "v": v}
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     env = gym.make("FrozenLake-v1")
     pi, info = value_iteration(env)
     print_pi(pi)

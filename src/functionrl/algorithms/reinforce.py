@@ -57,13 +57,15 @@ def reinforce(
         losses.append(loss.item())
 
         if i % log_interval == 0:
-            policy = make_greedy_policy_from_model(pi, n_states)
-            mean_return = evaluate_policy(make_env, policy, eval_episodes)
+            eval_policy = make_greedy_policy_from_model(pi, n_states)
+            mean_return = evaluate_policy(make_env, eval_policy, eval_episodes)
             mean_loss = np.array(losses[-log_interval:]).mean()
             print(f"{i:5d}  mean_return: {mean_return:.3f} - loss: {mean_loss:8.4f}")
 
+    return policy
 
-if __name__ == "__main__":
+
+if __name__ == "__main__":  # pragma: no cover
     reinforce(
         make_frozen_lake,
         gamma=0.99,

@@ -8,7 +8,7 @@ def linear_decay(start, end, decay_steps):
 
 
 def decay_generator(decay_fn):
-    for i in count():
+    for i in count():  # pragma: no branch
         yield decay_fn(i)
 
 

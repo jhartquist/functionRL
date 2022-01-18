@@ -52,7 +52,7 @@ def tabular_q(
     return q
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     q = tabular_q(
         make_frozen_lake,
         gamma=1,
